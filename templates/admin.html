@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Panel{% endblock %}
+
+{% block content %}
+<div class="admin-panel">
+    <h1>Navigation Routes Management</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="admin-actions">
+        <a href="{{ url_for('add_route') }}" class="btn btn-primary">Add New Route</a>
+    </div>
+    
+    <div class="routes-table">
+        <h2>Existing Routes</h2>
+        {% if routes %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Building</th>
+                        <th>Description</th>
+                        <th>Path Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for route in routes %}
+                        <tr>
+                            <td>{{ route.id }}</td>
+                            <td>{{ route.name }}</td>
+                            <td>{{ route.building }}</td>
+                            <td>{{ route.description }}</td>
+                            <td>
+                                {% if route.path_points|length > 0 %}
+                                    <span class="status-recorded">Recorded</span>
+                                {% else %}
+                                    <span class="status-unrecorded">Not Recorded</span>
+                                {% endif %}
+                            </td>
+                            <td class="actions">
+                                <a href="{{ url_for('edit_route', route_id=route.id) }}" class="btn btn-small">Edit</a>
+                                <a href="{{ url_for('record_path', route_id=route.id) }}" class="btn btn-small btn-record">
+                                    {% if route.path_points|length > 0 %}
+                                        Re-record Path
+                                    {% else %}
+                                        Record Path
+                                    {% endif %}
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No routes defined yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-panel {
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .admin-panel h1 {
+        margin-bottom: 20px;
+        color: #333;
+    }
+    
+    .alert {
+        padding: 10px 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+    
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .alert-error {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .admin-actions {
+        margin-bottom: 30px;
+    }
+    
+    .btn-primary {
+        background-color: #1a73e8;
+        color: white;
+    }
+    
+    .routes-table {
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    .routes-table h2 {
+        margin-bottom: 15px;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    th, td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    thead {
+        background-color: #f5f5f5;
+    }
+    
+    .status-recorded {
+        color: #28a745;
+        font-weight: bold;
+    }
+    
+    .status-unrecorded {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .btn-small {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+    }
+    
+    .btn-record {
+        background-color: #28a745;
+    }
+</style>
+{% endblock %}

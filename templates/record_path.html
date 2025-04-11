@@ -1,0 +1,543 @@
+{% extends 'base.html' %}
+
+{% block title %}Record Path{% endblock %}
+
+{% block content %}
+<div class="record-container">
+    <h1>Record Path for: {{ route.name }}</h1>
+    <p class="route-info">Building: {{ route.building }}</p>
+    <p class="route-description">{{ route.description }}</p>
+    
+    <div class="recording-area">
+        <div class="map-container">
+            <div id="location-display">
+                <h3>Current Location</h3>
+                <div class="location-data">
+                    <p><strong>Latitude:</strong> <span id="latitude">--</span></p>
+                    <p><strong>Longitude:</strong> <span id="longitude">--</span></p>
+                    <p><strong>Altitude:</strong> <span id="altitude">--</span> m</p>
+                    <p><strong>Accuracy:</strong> <span id="accuracy">--</span> m</p>
+                </div>
+                <div class="location-status">
+                    <div id="status-indicator"></div>
+                    <span id="status-text">Waiting for GPS signal...</span>
+                </div>
+                <div class="location-note">
+                    <p><em>Note: For best results, stand at each key point or corner before adding it.</em></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="recording-controls">
+            <button id="start-tracking" class="btn btn-primary">Start Tracking</button>
+            <button id="add-point" class="btn btn-success" disabled>Add Point</button>
+            <button id="mark-stairs" class="btn btn-warning" disabled>Mark as Stairs</button>
+            <button id="undo-point" class="btn btn-danger" disabled>Remove Last Point</button>
+            <button id="save-path" class="btn btn-primary" disabled>Save Path</button>
+            <button id="cancel" class="btn btn-secondary">Cancel</button>
+        </div>
+        
+        <div class="path-points">
+            <h3>Recorded Path Points</h3>
+            <div class="path-summary">
+                <span id="point-count">0</span> points recorded
+            </div>
+            <ul id="points-list">
+                <li class="empty-message">No points recorded yet. Click "Start Tracking" then "Add Point" at each key location.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="recording-instructions">
+        <h3>How to Record a Path</h3>
+        <ol>
+            <li>Click "Start Tracking" to begin using your device's GPS.</li>
+            <li>Walk to the starting point of your path.</li>
+            <li>Click "Add Point" to record your current position.</li>
+            <li>Walk to the next corner or significant point in the path.</li>
+            <li>Click "Add Point" again.</li>
+            <li>If you reach stairs or change floors, click "Mark as Stairs" to indicate a level change.</li>
+            <li>Continue until you reach the destination.</li>
+            <li>Click "Save Path" when complete.</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .record-container {
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 25px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .record-container h1 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+    
+    .route-info {
+        font-weight: 500;
+        margin-bottom: 5px;
+    }
+    
+    .route-description {
+        color: #666;
+        margin-bottom: 25px;
+    }
+    
+    .recording-area {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    @media (min-width: 768px) {
+        .recording-area {
+            grid-template-columns: 2fr 1fr;
+        }
+    }
+    
+    .map-container {
+        min-height: 300px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 20px;
+        background-color: #f8f9fa;
+    }
+    
+    #location-display {
+        height: 100%;
+    }
+    
+    #location-display h3 {
+        margin-bottom: 15px;
+        color: #333;
+    }
+    
+    .location-data {
+        margin-bottom: 20px;
+    }
+    
+    .location-data p {
+        margin-bottom: 8px;
+    }
+    
+    .location-status {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    #status-indicator {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background-color: #dc3545;
+        margin-right: 10px;
+    }
+    
+    #status-indicator.active {
+        background-color: #28a745;
+    }
+    
+    .location-note {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #fff3cd;
+        border-radius: 4px;
+    }
+    
+    .recording-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .path-points {
+        grid-column: 1 / -1;
+    }
+    
+    .path-points h3 {
+        margin-bottom: 10px;
+    }
+    
+    .path-summary {
+        margin-bottom: 15px;
+        font-weight: 500;
+    }
+    
+    #points-list {
+        list-style: none;
+        padding: 0;
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    
+    #points-list li {
+        padding: 10px 15px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    #points-list li:last-child {
+        border-bottom: none;
+    }
+    
+    .point-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .point-type {
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    
+    .point-type.corner {
+        background-color: #cfe2ff;
+        color: #084298;
+    }
+    
+    .point-type.stairs {
+        background-color: #fff3cd;
+        color: #664d03;
+    }
+    
+    .empty-message {
+        color: #666;
+        font-style: italic;
+        padding: 15px;
+    }
+    
+    .btn {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .btn-primary {
+        background-color: #0d6efd;
+        color: white;
+    }
+    
+    .btn-success {
+        background-color: #198754;
+        color: white;
+    }
+    
+    .btn-warning {
+        background-color: #ffc107;
+        color: #212529;
+    }
+    
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+    
+    .recording-instructions {
+        margin-top: 40px;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .recording-instructions h3 {
+        margin-bottom: 15px;
+        color: #333;
+    }
+    
+    .recording-instructions ol {
+        padding-left: 20px;
+    }
+    
+    .recording-instructions li {
+        margin-bottom: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Elements
+        const startTrackingBtn = document.getElementById('start-tracking');
+        const addPointBtn = document.getElementById('add-point');
+        const markStairsBtn = document.getElementById('mark-stairs');
+        const undoPointBtn = document.getElementById('undo-point');
+        const savePathBtn = document.getElementById('save-path');
+        const cancelBtn = document.getElementById('cancel');
+        const pointsList = document.getElementById('points-list');
+        const pointCount = document.getElementById('point-count');
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+        
+        // Location display elements
+        const latitudeEl = document.getElementById('latitude');
+        const longitudeEl = document.getElementById('longitude');
+        const altitudeEl = document.getElementById('altitude');
+        const accuracyEl = document.getElementById('accuracy');
+        
+        // Path data
+        let pathPoints = [];
+        let watchId = null;
+        let currentPosition = null;
+        
+        // Event listeners
+        startTrackingBtn.addEventListener('click', function() {
+            if (!watchId) {
+                startGeolocationTracking();
+            } else {
+                stopGeolocationTracking();
+            }
+        });
+        
+        addPointBtn.addEventListener('click', function() {
+            if (currentPosition) {
+                addPathPoint('corner');
+                updatePointsList();
+                updateButtonStates();
+            } else {
+                alert('Cannot add point: No valid GPS position available.');
+            }
+        });
+        
+        markStairsBtn.addEventListener('click', function() {
+            if (currentPosition) {
+                addPathPoint('stairs');
+                updatePointsList();
+                updateButtonStates();
+            } else {
+                alert('Cannot add stairs point: No valid GPS position available.');
+            }
+        });
+        
+        undoPointBtn.addEventListener('click', function() {
+            if (pathPoints.length > 0) {
+                pathPoints.pop();
+                updatePointsList();
+                updateButtonStates();
+            }
+        });
+        
+        savePathBtn.addEventListener('click', function() {
+            if (pathPoints.length < 2) {
+                alert('Please record at least two points to create a valid path.');
+                return;
+            }
+            
+            saveRecordedPath();
+        });
+        
+        cancelBtn.addEventListener('click', function() {
+            if (pathPoints.length > 0 && !confirm('Are you sure you want to cancel? All recorded path points will be lost.')) {
+                return;
+            }
+            
+            stopGeolocationTracking();
+            window.location.href = "{{ url_for('admin') }}";
+        });
+        
+        // Start tracking geolocation
+        function startGeolocationTracking() {
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser');
+                return;
+            }
+            
+            // Update UI
+            startTrackingBtn.textContent = 'Stop Tracking';
+            statusText.textContent = 'Acquiring GPS signal...';
+            
+            // Start watching position
+            watchId = navigator.geolocation.watchPosition(
+                positionSuccess,
+                positionError,
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+        
+        // Stop tracking geolocation
+        function stopGeolocationTracking() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+                
+                // Update UI
+                startTrackingBtn.textContent = 'Start Tracking';
+                statusIndicator.classList.remove('active');
+                statusText.textContent = 'GPS tracking stopped';
+                
+                // Disable add point buttons
+                addPointBtn.disabled = true;
+                markStairsBtn.disabled = true;
+            }
+        }
+        
+        // Handle successful position acquisition
+        function positionSuccess(position) {
+            currentPosition = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                altitude: position.coords.altitude,
+                accuracy: position.coords.accuracy,
+                timestamp: position.timestamp
+            };
+            
+            // Update UI
+            latitudeEl.textContent = position.coords.latitude.toFixed(6);
+            longitudeEl.textContent = position.coords.longitude.toFixed(6);
+            
+            // Handle altitude which might be null
+            if (position.coords.altitude) {
+                altitudeEl.textContent = position.coords.altitude.toFixed(2);
+            } else {
+                altitudeEl.textContent = 'Not available';
+            }
+            
+            accuracyEl.textContent = position.coords.accuracy.toFixed(2);
+            
+            statusIndicator.classList.add('active');
+            statusText.textContent = 'GPS signal acquired';
+            
+            // Enable add point buttons
+            addPointBtn.disabled = false;
+            markStairsBtn.disabled = false;
+        }
+        
+        // Handle position errors
+        function positionError(error) {
+            let errorMessage = '';
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = 'User denied the request for Geolocation';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = 'Location information is unavailable';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = 'The request to get user location timed out';
+                    break;
+                case error.UNKNOWN_ERROR:
+                    errorMessage = 'An unknown error occurred';
+                    break;
+            }
+            
+            statusIndicator.classList.remove('active');
+            statusText.textContent = 'Error: ' + errorMessage;
+            
+            alert('Geolocation error: ' + errorMessage);
+        }
+        
+        // Add a new point to the path
+        function addPathPoint(type) {
+            const point = {
+                ...currentPosition,
+                type: type,
+                sequence: pathPoints.length + 1
+            };
+            
+            pathPoints.push(point);
+        }
+        
+        // Update the points list display
+        function updatePointsList() {
+            pointsList.innerHTML = '';
+            pointCount.textContent = pathPoints.length;
+            
+            if (pathPoints.length === 0) {
+                const emptyMessage = document.createElement('li');
+                emptyMessage.className = 'empty-message';
+                emptyMessage.textContent = 'No points recorded yet. Click "Start Tracking" then "Add Point" at each key location.';
+                pointsList.appendChild(emptyMessage);
+            } else {
+                pathPoints.forEach((point, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'point-item';
+                    
+                    const pointInfo = document.createElement('div');
+                    pointInfo.innerHTML = `
+                        <strong>Point ${index + 1}:</strong> 
+                        Lat: ${point.latitude.toFixed(6)}, 
+                        Long: ${point.longitude.toFixed(6)}
+                        ${point.altitude ? ', Alt: ' + point.altitude.toFixed(2) + 'm' : ''}
+                    `;
+                    
+                    const pointType = document.createElement('span');
+                    pointType.className = 'point-type ' + point.type;
+                    pointType.textContent = point.type === 'stairs' ? 'Stairs' : 'Corner';
+                    
+                    li.appendChild(pointInfo);
+                    li.appendChild(pointType);
+                    pointsList.appendChild(li);
+                });
+            }
+        }
+        
+        // Update button states based on current path data
+        function updateButtonStates() {
+            undoPointBtn.disabled = pathPoints.length === 0;
+            savePathBtn.disabled = pathPoints.length < 2;
+        }
+        
+        // Save the recorded path
+        function saveRecordedPath() {
+            // Send the path data to the server
+            fetch('{{ url_for("save_path", route_id=route.id) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({ path_points: pathPoints })
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Path saved successfully!');
+                    window.location.href = "{{ url_for('admin') }}";
+                } else {
+                    throw new Error('Failed to save path');
+                }
+            })
+            .catch(error => {
+                alert('Error saving path: ' + error.message);
+            });
+        }
+        
+        // Helper function to get CSRF token
+        function getCsrfToken() {
+            // In a real app, you would extract this from a meta tag or cookie
+            // For this example, we'll just return an empty string
+            return '';
+        }
+    });
+</script>
+{% endblock %}

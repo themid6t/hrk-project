@@ -1,0 +1,1283 @@
+{% extends 'base.html' %}
+
+{% block title %}Navigate to {{ route.name }}{% endblock %}
+
+{% block content %}
+<div class="navigation-container">
+    <div class="navigation-header">
+        <h1>Navigate to: {{ route.name }}</h1>
+        <div class="location-details">
+            <p><strong>Building:</strong> {{ route.building }}</p>
+            <p><strong>Description:</strong> {{ route.description }}</p>
+        </div>
+    </div>
+    
+    <div class="navigation-content">
+        <div class="navigation-map">
+            <div id="location-display">
+                <h3>Your Current Location</h3>
+                <div class="location-data">
+                    <p><strong>Latitude:</strong> <span id="latitude">--</span></p>
+                    <p><strong>Longitude:</strong> <span id="longitude">--</span></p>
+                    <p><strong>Altitude:</strong> <span id="altitude">--</span> m</p>
+                    <p><strong>Accuracy:</strong> <span id="accuracy">--</span> m</p>
+                </div>
+                <div class="location-status">
+                    <div id="status-indicator"></div>
+                    <span id="status-text">Waiting for GPS signal...</span>
+                </div>
+            </div>
+            <div class="canvas-container">
+                <canvas id="navigation-canvas"></canvas>
+                <div class="direction-indicator" id="direction-arrow">
+                    <div class="arrow"></div>
+                    <div class="distance-text">-- m</div>
+                </div>
+                <div id="compass-calibration-msg" class="compass-calibration-msg">
+                    Calibrate compass: Move your device in a figure-8 pattern
+                </div>
+                <div id="large-direction-arrow" class="large-direction-arrow">
+                    <div class="large-arrow-head"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navigation-instructions">
+            <h3>Navigation Instructions</h3>
+            <div id="instruction-display">
+                <p class="instruction-waiting">Start navigation to see directions...</p>
+            </div>
+            <div class="navigation-controls">
+                <button id="start-navigation" class="btn btn-primary">Start Navigation</button>
+                <button id="stop-navigation" class="btn btn-danger" disabled>Stop Navigation</button>
+            </div>
+            <div class="navigation-progress">
+                <div class="progress-bar">
+                    <div id="progress-indicator"></div>
+                </div>
+                <div class="progress-info">
+                    <p><span id="distance-remaining">--</span> remaining</p>
+                    <p>Next waypoint: <span id="next-waypoint-distance">--</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="navigation-path-info">
+        <h3>Path Information</h3>
+        <div class="path-stats">
+            <div class="stat-item">
+                <span class="stat-label">Distance</span>
+                <span id="total-distance" class="stat-value">--</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Points</span>
+                <span class="stat-value">{{ route.path_points|length }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Stairs</span>
+                <span class="stat-value">{{ route.path_points|selectattr('type', 'equalto', 'stairs')|list|length }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Current</span>
+                <span id="current-waypoint" class="stat-value">--</span>
+            </div>
+        </div>
+        <div class="path-points-display">
+            <h4>Path Waypoints</h4>
+            <ul class="waypoint-list">
+                {% for point in route.path_points %}
+                    <li class="waypoint-item {% if point.type == 'stairs' %}waypoint-stairs{% endif %}" data-point-index="{{ loop.index0 }}">
+                        <span class="waypoint-number">{{ loop.index }}</span>
+                        <span class="waypoint-type">{{ point.type|capitalize }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .navigation-container {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+    
+    .navigation-header {
+        margin-bottom: 30px;
+    }
+    
+    .navigation-header h1 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+    
+    .location-details {
+        padding: 15px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .location-details p {
+        margin: 5px 0;
+    }
+    
+    .navigation-content {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    @media (min-width: 768px) {
+        .navigation-content {
+            grid-template-columns: 2fr 1fr;
+        }
+    }
+    
+    .navigation-map {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        min-height: 400px;
+    }
+    
+    #location-display {
+        margin-bottom: 20px;
+    }
+    
+    #location-display h3 {
+        margin-bottom: 15px;
+        color: #333;
+    }
+    
+    .location-data {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .location-status {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    #status-indicator {
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background-color: #dc3545;
+        margin-right: 10px;
+    }
+    
+    #status-indicator.active {
+        background-color: #28a745;
+    }
+    
+    .canvas-container {
+        width: 100%;
+        height: 300px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    #navigation-canvas {
+        width: 100%;
+        height: 100%;
+    }
+    
+    .direction-indicator {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        width: 60px;
+        height: 60px;
+        background-color: white;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: opacity 0.3s, transform 0.2s;
+        z-index: 10;
+    }
+    
+    .direction-indicator.active {
+        opacity: 1;
+    }
+    
+    .arrow {
+        width: 24px;
+        height: 24px;
+        border: solid #1a73e8;
+        border-width: 0 4px 4px 0;
+        transform: rotate(-45deg);
+        margin-bottom: 2px;
+        transition: transform 0.3s ease, border-color 0.3s;
+    }
+    
+    /* Pulse animation for the arrow when close to target */
+    @keyframes pulse {
+        0% { transform: scale(1) rotate(-45deg); }
+        50% { transform: scale(1.15) rotate(-45deg); }
+        100% { transform: scale(1) rotate(-45deg); }
+    }
+    
+    .arrow.pulse {
+        animation: pulse 1.5s infinite;
+    }
+    
+    .distance-text {
+        font-size: 12px;
+        font-weight: bold;
+        color: #333;
+    }
+    
+    /* Large direction arrow styling */
+    .large-direction-arrow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 120px;
+        height: 120px;
+        margin-top: -60px;
+        margin-left: -60px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.8);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: scale(0.8);
+        transition: opacity 0.4s, transform 0.3s;
+        z-index: 5;
+        pointer-events: none;
+    }
+    
+    .large-direction-arrow.active {
+        opacity: 1;
+        transform: scale(1);
+    }
+    
+    .large-arrow-head {
+        width: 50px;
+        height: 50px;
+        border: solid #1a73e8;
+        border-width: 0 10px 10px 0;
+        transform: rotate(-45deg);
+        transition: transform 0.3s ease, border-color 0.3s;
+    }
+
+    /* Animation for the large arrow when very close to waypoint */
+    @keyframes largePulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+        100% { transform: scale(1); }
+    }
+    
+    .large-direction-arrow.pulse {
+        animation: largePulse 1.5s infinite;
+    }
+    
+    /* Compass calibration message styling */
+    .compass-calibration-msg {
+        position: absolute;
+        top: 90px;
+        left: 20px;
+        background-color: rgba(255, 152, 0, 0.9);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        max-width: 200px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        display: none;
+        z-index: 10;
+    }
+    
+    .compass-calibration-msg.visible {
+        display: block;
+        animation: fadeIn 0.3s;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Elements
+        const startNavigationBtn = document.getElementById('start-navigation');
+        const stopNavigationBtn = document.getElementById('stop-navigation');
+        const instructionDisplay = document.getElementById('instruction-display');
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+        const latitudeEl = document.getElementById('latitude');
+        const longitudeEl = document.getElementById('longitude');
+        const altitudeEl = document.getElementById('altitude');
+        const accuracyEl = document.getElementById('accuracy');
+        const distanceRemainingEl = document.getElementById('distance-remaining');
+        const nextWaypointDistanceEl = document.getElementById('next-waypoint-distance');
+        const totalDistanceEl = document.getElementById('total-distance');
+        const currentWaypointEl = document.getElementById('current-waypoint');
+        const progressIndicator = document.getElementById('progress-indicator');
+        const navigationCanvas = document.getElementById('navigation-canvas');
+        const directionArrow = document.getElementById('direction-arrow');
+        const arrowElement = directionArrow.querySelector('.arrow');
+        const distanceText = directionArrow.querySelector('.distance-text');
+        const waypointItems = document.querySelectorAll('.waypoint-item');
+        const compassCalibrationMsg = document.getElementById('compass-calibration-msg');
+        const largeDirectionArrow = document.getElementById('large-direction-arrow');
+        const largeArrowHead = document.querySelector('.large-arrow-head');
+        
+        // Route data from the server
+        const routePathPoints = {{ route.path_points|tojson }};
+        
+        // Navigation state
+        let watchId = null;
+        let currentPosition = null;
+        let navigationActive = false;
+        let targetWaypointIndex = 0;
+        let waypointProximityThreshold = 15; // Meters - distance to consider "arrived" at waypoint
+        let totalDistance = 0;
+        let bearingToTarget = 0;
+        let headingAngle = 0;
+        let accuracySmoothing = [];
+        let positionBuffer = [];
+        let maxBufferSize = 5; // For position smoothing
+        let positionWeightedHistory = []; // To store historical positions with weights
+        let maxHistorySize = 10; // Maximum number of historical positions to consider
+        let isDeviceOrientationAvailable = false;
+        let compassCalibrationNeeded = false;
+        let lastOrientationTimestamp = 0;
+        let orientationReliability = 0; // 0-1 scale for orientation reliability
+        const ctx = navigationCanvas.getContext('2d');
+        
+        // Check if device orientation is available
+        if (window.DeviceOrientationEvent) {
+            window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+            isDeviceOrientationAvailable = true;
+        }
+        
+        // Handle device orientation data
+        function handleDeviceOrientation(event) {
+            // Track time between orientation updates to detect reliability
+            const now = Date.now();
+            if (lastOrientationTimestamp > 0) {
+                const timeDiff = now - lastOrientationTimestamp;
+                // If updates are frequent (< 200ms apart), increase reliability
+                if (timeDiff < 200) {
+                    orientationReliability = Math.min(orientationReliability + 0.05, 1);
+                } else {
+                    // Otherwise decrease reliability
+                    orientationReliability = Math.max(orientationReliability - 0.1, 0);
+                }
+            }
+            lastOrientationTimestamp = now;
+            
+            // Alpha is the compass direction the device is facing
+            if (event.alpha !== null) {
+                // Apply adaptive low-pass filter to heading for smoother transitions
+                // Less filtering when movement is detected (higher reliability)
+                const alpha = 0.1 + (orientationReliability * 0.2); 
+                headingAngle = headingAngle ? alpha * event.alpha + (1 - alpha) * headingAngle : event.alpha;
+                
+                // Check if compass seems to need calibration
+                if ((event.webkitCompassAccuracy !== undefined && event.webkitCompassAccuracy < 0) || 
+                    orientationReliability < 0.3) {
+                    compassCalibrationNeeded = true;
+                    compassCalibrationMsg.classList.add('visible');
+                } else {
+                    compassCalibrationNeeded = false;
+                    compassCalibrationMsg.classList.remove('visible');
+                }
+                
+                if (navigationActive && currentPosition) {
+                    updateDirectionArrow();
+                    updateLargeDirectionArrow();
+                }
+            }
+        }
+        
+        // Event listeners
+        startNavigationBtn.addEventListener('click', function() {
+            if (!navigationActive) {
+                startNavigation();
+            }
+        });
+        
+        stopNavigationBtn.addEventListener('click', function() {
+            if (navigationActive) {
+                stopNavigation();
+            }
+        });
+        
+        // Initialize the page
+        function initialize() {
+            // Calculate total distance if we have path points
+            if (routePathPoints.length >= 2) {
+                totalDistance = calculateTotalDistance(routePathPoints);
+                totalDistanceEl.textContent = formatDistance(totalDistance);
+            } else {
+                totalDistanceEl.textContent = 'N/A';
+            }
+            
+            // Resize canvas to fit container
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Draw the path on the canvas
+            drawPath();
+        }
+        
+        // Resize canvas to match its container
+        function resizeCanvas() {
+            const container = navigationCanvas.parentElement;
+            navigationCanvas.width = container.clientWidth;
+            navigationCanvas.height = container.clientHeight;
+            
+            // Redraw path after resize
+            drawPath();
+        }
+        
+        // Start navigation
+        function startNavigation() {
+            if (!navigator.geolocation) {
+                alert('Geolocation is not supported by your browser');
+                return;
+            }
+            
+            // Reset navigation state
+            targetWaypointIndex = 0;
+            positionBuffer = [];
+            accuracySmoothing = [];
+            positionWeightedHistory = [];
+            orientationReliability = 0.5; // Start with medium reliability
+            
+            // Update UI
+            navigationActive = true;
+            startNavigationBtn.disabled = true;
+            stopNavigationBtn.disabled = false;
+            instructionDisplay.innerHTML = '<p class="instruction-active">Acquiring your location...</p>';
+            statusText.textContent = 'Acquiring GPS signal...';
+            
+            // Reset waypoint styles
+            waypointItems.forEach(item => {
+                item.classList.remove('active', 'passed');
+            });
+            
+            // Get high accuracy position with timeout
+            const geoOptions = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
+            
+            // Start watching position with a one-time call first to ensure we get a position
+            navigator.geolocation.getCurrentPosition(
+                // Success callback
+                (position) => {
+                    // Show that we've acquired GPS
+                    directionArrow.classList.add('active');
+                    largeDirectionArrow.classList.add('active');
+                    
+                    // Process first position and start continuous watching
+                    navigationPositionUpdate(position);
+                    
+                    // Now start continuous watching
+                    watchId = navigator.geolocation.watchPosition(
+                        navigationPositionUpdate,
+                        positionError,
+                        geoOptions
+                    );
+                },
+                // Error callback
+                (error) => {
+                    positionError(error);
+                    // If there's an error, still try watching
+                    watchId = navigator.geolocation.watchPosition(
+                        navigationPositionUpdate,
+                        positionError,
+                        geoOptions
+                    );
+                },
+                geoOptions
+            );
+        }
+        
+        // Stop navigation
+        function stopNavigation() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            
+            // Update UI
+            navigationActive = false;
+            startNavigationBtn.disabled = false;
+            stopNavigationBtn.disabled = true;
+            statusIndicator.classList.remove('active');
+            statusText.textContent = 'Navigation stopped';
+            instructionDisplay.innerHTML = '<p class="instruction-waiting">Start navigation to see directions...</p>';
+            directionArrow.classList.remove('active');
+            largeDirectionArrow.classList.remove('active');
+            compassCalibrationMsg.classList.remove('visible');
+            
+            // Reset waypoint styles
+            waypointItems.forEach(item => {
+                item.classList.remove('active', 'passed');
+            });
+        }
+        
+        // Handle position updates during navigation
+        function navigationPositionUpdate(position) {
+            const newPosition = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                altitude: position.coords.altitude,
+                accuracy: position.coords.accuracy,
+                timestamp: position.timestamp
+            };
+            
+            // Add to position buffer for smoothing
+            addPositionToBuffer(newPosition);
+            
+            // Add to weighted history for better prediction
+            addPositionToHistory(newPosition);
+            
+            // Track accuracy for determining GPS quality
+            accuracySmoothing.push(position.coords.accuracy);
+            if (accuracySmoothing.length > 10) {
+                accuracySmoothing.shift();
+            }
+            
+            // Get smoothed position - adaptive smoothing based on accuracy
+            currentPosition = getSmoothPosition(position.coords.accuracy);
+            
+            // Update location display with raw position
+            latitudeEl.textContent = position.coords.latitude.toFixed(6);
+            longitudeEl.textContent = position.coords.longitude.toFixed(6);
+            
+            if (position.coords.altitude) {
+                altitudeEl.textContent = position.coords.altitude.toFixed(2);
+            } else {
+                altitudeEl.textContent = 'Not available';
+            }
+            
+            accuracyEl.textContent = position.coords.accuracy.toFixed(2);
+            
+            // Update status indicator - change color based on accuracy
+            statusIndicator.classList.add('active');
+            
+            // Dynamic accuracy thresholds based on environment (indoor/outdoor)
+            const isLikelyIndoor = routePathPoints.some(point => point.type === 'indoor') || 
+                                  (position.coords.accuracy > 20 && position.coords.altitude !== null);
+            
+            const accuracyThresholds = isLikelyIndoor 
+                ? { excellent: 15, good: 25 } // More lenient thresholds for indoor
+                : { excellent: 10, good: 20 }; // Standard thresholds for outdoor
+            
+            if (position.coords.accuracy <= accuracyThresholds.excellent) {
+                statusIndicator.style.backgroundColor = '#28a745'; // Good accuracy - green
+                statusText.textContent = `GPS signal excellent (±${position.coords.accuracy.toFixed(1)}m)`;
+            } else if (position.coords.accuracy <= accuracyThresholds.good) {
+                statusIndicator.style.backgroundColor = '#ffc107'; // Medium accuracy - yellow
+                statusText.textContent = `GPS signal good (±${position.coords.accuracy.toFixed(1)}m)`;
+            } else {
+                statusIndicator.style.backgroundColor = '#dc3545'; // Poor accuracy - red
+                statusText.textContent = `GPS signal weak (±${position.coords.accuracy.toFixed(1)}m)`;
+                
+                // Give user suggestions to improve accuracy
+                if (accuracySmoothing.length > 5 && 
+                    accuracySmoothing.slice(-5).reduce((sum, acc) => sum + acc, 0) / 5 > 30) {
+                    
+                    // Show suggestions if accuracy is consistently poor
+                    instructionDisplay.innerHTML += `
+                        <p class="instruction-warning">
+                            <strong>Poor GPS signal:</strong> Try moving away from buildings or trees, or going near a window.
+                        </p>`;
+                }
+            }
+            
+            // Adjust waypoint proximity threshold based on GPS accuracy
+            // If accuracy is poor, we need a larger proximity threshold
+            waypointProximityThreshold = Math.max(15, position.coords.accuracy * 0.8);
+            
+            // Update navigation
+            updateNavigation();
+        }
+        
+        // Update the navigation state
+        function updateNavigation() {
+            if (!navigationActive || !currentPosition || routePathPoints.length === 0) {
+                return;
+            }
+            
+            // Check if we've reached the current target waypoint
+            const distanceToTarget = calculateDistance(currentPosition, routePathPoints[targetWaypointIndex]);
+            
+            // Update next waypoint distance display
+            nextWaypointDistanceEl.textContent = formatDistance(distanceToTarget);
+            
+            // Calculate the bearing to the target waypoint
+            bearingToTarget = calculateBearing(currentPosition, routePathPoints[targetWaypointIndex]);
+            
+            // Update the direction arrows
+            updateDirectionArrow();
+            updateLargeDirectionArrow();
+            
+            // Calculate total remaining distance
+            let remainingDistance = distanceToTarget;
+            for (let i = targetWaypointIndex; i < routePathPoints.length - 1; i++) {
+                remainingDistance += calculateDistance(routePathPoints[i], routePathPoints[i + 1]);
+            }
+            
+            // Update distance remaining display
+            distanceRemainingEl.textContent = formatDistance(remainingDistance);
+            
+            // Update current waypoint display
+            currentWaypointEl.textContent = `${targetWaypointIndex + 1}/${routePathPoints.length}`;
+            
+            // Update progress bar
+            if (totalDistance > 0) {
+                const progressPct = Math.max(0, Math.min(100, 100 * (1 - (remainingDistance / totalDistance))));
+                progressIndicator.style.width = `${progressPct}%`;
+            }
+            
+            // Update waypoint indicators in the list
+            waypointItems.forEach((item, index) => {
+                item.classList.remove('active', 'passed');
+                if (index === targetWaypointIndex) {
+                    item.classList.add('active');
+                } else if (index < targetWaypointIndex) {
+                    item.classList.add('passed');
+                }
+            });
+            
+            // Check if we've reached the waypoint - adjust threshold based on GPS accuracy
+            if (distanceToTarget <= waypointProximityThreshold) {
+                // We've reached this waypoint
+                let waypointType = routePathPoints[targetWaypointIndex].type || 'corner';
+                
+                // Provide instruction based on waypoint type
+                let instruction = '';
+                if (waypointType === 'stairs' || waypointType === 'elevator') {
+                    instruction = `<p class="instruction-highlight">You've reached the ${waypointType}.</p>`;
+                    
+                    // Check if we're going up or down
+                    if (targetWaypointIndex < routePathPoints.length - 1) {
+                        const currentAlt = routePathPoints[targetWaypointIndex].altitude;
+                        const nextAlt = routePathPoints[targetWaypointIndex + 1].altitude;
+                        
+                        if (currentAlt && nextAlt && currentAlt !== nextAlt) {
+                            const direction = nextAlt > currentAlt ? 'up' : 'down';
+                            instruction += `<p>Go ${direction} to continue</p>`;
+                        }
+                    }
+                } else if (targetWaypointIndex === routePathPoints.length - 1) {
+                    // We've reached the destination
+                    instruction = '<p class="instruction-highlight">You have arrived at your destination!</p>';
+                } else {
+                    // Regular waypoint
+                    instruction = '<p>Continue to the next point.</p>';
+                }
+                
+                instructionDisplay.innerHTML = instruction;
+                
+                // Move to next waypoint if not at the end
+                if (targetWaypointIndex < routePathPoints.length - 1) {
+                    targetWaypointIndex++;
+                    
+                    // Calculate new bearing to next target
+                    bearingToTarget = calculateBearing(currentPosition, routePathPoints[targetWaypointIndex]);
+                    
+                    // Get next waypoint type for instructions
+                    const nextWaypointType = routePathPoints[targetWaypointIndex].type || 'corner';
+                    
+                    // Add instruction for the next waypoint
+                    if (nextWaypointType === 'stairs') {
+                        instructionDisplay.innerHTML += '<p>Head toward the stairs.</p>';
+                    } else if (nextWaypointType === 'elevator') {
+                        instructionDisplay.innerHTML += '<p>Head toward the elevator.</p>';
+                    } else if (targetWaypointIndex === routePathPoints.length - 1) {
+                        instructionDisplay.innerHTML += '<p>Head toward your destination.</p>';
+                    } else {
+                        instructionDisplay.innerHTML += '<p>Head toward the next waypoint.</p>';
+                    }
+                    
+                    // Re-update direction arrow for new target
+                    updateDirectionArrow();
+                    updateLargeDirectionArrow();
+                } else {
+                    // We've reached the final destination
+                    instructionDisplay.innerHTML = '<p class="instruction-highlight">You have arrived at your destination!</p>';
+                    
+                    // Hide the direction arrows
+                    largeDirectionArrow.classList.remove('active');
+                }
+            } else {
+                // Still heading to current waypoint
+                let instruction = '';
+                
+                if (targetWaypointIndex === 0) {
+                    instruction = '<p>Head toward the starting point.</p>';
+                } else if (targetWaypointIndex === routePathPoints.length - 1) {
+                    instruction = '<p>Continue to your destination.</p>';
+                } else {
+                    const waypointType = routePathPoints[targetWaypointIndex].type || 'corner';
+                    instruction = `<p>Continue to the next ${waypointType}.</p>`;
+                }
+                
+                // Add distance information
+                instruction += `<p>Distance: ${formatDistance(distanceToTarget)}</p>`;
+                
+                instructionDisplay.innerHTML = instruction;
+            }
+            
+            // Draw the path and current position on canvas
+            drawPath();
+        }
+        
+        // Update the small direction arrow in the corner
+        function updateDirectionArrow() {
+            // Show distance to next waypoint
+            const distanceToTarget = calculateDistance(currentPosition, routePathPoints[targetWaypointIndex]);
+            distanceText.textContent = formatDistance(distanceToTarget);
+            
+            // Calculate the rotation angle for the arrow
+            let rotationAngle;
+            
+            if (isDeviceOrientationAvailable && headingAngle !== null) {
+                // If device orientation is available, use it to adjust the arrow
+                // Convert heading from 0-360 to -180 to 180 for easier calculation
+                const heading = headingAngle > 180 ? headingAngle - 360 : headingAngle;
+                
+                // Calculate relative bearing (the angle the user needs to turn)
+                // This considers the bearing to target and the current device heading
+                rotationAngle = bearingToTarget - heading;
+                
+                // Normalize to -180 to 180
+                if (rotationAngle > 180) rotationAngle -= 360;
+                if (rotationAngle < -180) rotationAngle += 360;
+                
+                // Apply rotation to the arrow (add 45 degrees because our starting arrow points northeast)
+                arrowElement.style.transform = `rotate(${rotationAngle + 45}deg)`;
+                
+                // Change arrow color based on how accurately the user is facing the right direction
+                const absoluteAngleDiff = Math.abs(rotationAngle);
+                
+                // Create a smooth color transition based on angle difference
+                if (absoluteAngleDiff < 15) {
+                    // User is facing almost directly toward the target - Green
+                    arrowElement.style.borderColor = '#4CAF50';
+                    directionArrow.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+                } else if (absoluteAngleDiff < 45) {
+                    // User is facing roughly toward the target - Blue
+                    arrowElement.style.borderColor = '#1a73e8';
+                    directionArrow.style.backgroundColor = 'white';
+                } else if (absoluteAngleDiff < 90) {
+                    // User needs to turn a fair amount - Orange
+                    arrowElement.style.borderColor = '#FF9800';
+                    directionArrow.style.backgroundColor = 'rgba(255, 152, 0, 0.1)';
+                } else {
+                    // User is facing completely wrong direction - Red
+                    arrowElement.style.borderColor = '#F44336';
+                    directionArrow.style.backgroundColor = 'rgba(244, 67, 54, 0.1)';
+                }
+            } else {
+                // If device orientation is not available, just point the arrow north
+                // and rotate based on bearing to target
+                rotationAngle = bearingToTarget;
+                arrowElement.style.transform = `rotate(${rotationAngle + 45}deg)`;
+                arrowElement.style.borderColor = '#1a73e8'; // Default blue
+            }
+            
+            // Add pulse animation to arrow when very close to waypoint
+            if (distanceToTarget < waypointProximityThreshold * 1.5) {
+                arrowElement.classList.add('pulse');
+            } else {
+                arrowElement.classList.remove('pulse');
+            }
+        }
+        
+        // Update the large direction arrow in the center
+        function updateLargeDirectionArrow() {
+            const distanceToTarget = calculateDistance(currentPosition, routePathPoints[targetWaypointIndex]);
+            
+            // Calculate the rotation angle for the arrow
+            let rotationAngle;
+            
+            if (isDeviceOrientationAvailable && headingAngle !== null) {
+                // If device orientation is available, use it to adjust the arrow
+                // Convert heading from 0-360 to -180 to 180 for easier calculation
+                const heading = headingAngle > 180 ? headingAngle - 360 : headingAngle;
+                
+                // Calculate relative bearing (the angle the user needs to turn)
+                rotationAngle = bearingToTarget - heading;
+                
+                // Normalize to -180 to 180
+                if (rotationAngle > 180) rotationAngle -= 360;
+                if (rotationAngle < -180) rotationAngle += 360;
+                
+                // Apply rotation to the large arrow (add 45 degrees because our starting arrow points northeast)
+                largeArrowHead.style.transform = `rotate(${rotationAngle + 45}deg)`;
+                
+                // Color the large arrow based on direction accuracy
+                const absoluteAngleDiff = Math.abs(rotationAngle);
+                
+                if (absoluteAngleDiff < 15) {
+                    // Almost directly toward target - Green
+                    largeArrowHead.style.borderColor = '#4CAF50';
+                    largeDirectionArrow.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+                } else if (absoluteAngleDiff < 45) {
+                    // Roughly toward target - Blue
+                    largeArrowHead.style.borderColor = '#1a73e8';
+                    largeDirectionArrow.style.backgroundColor = 'rgba(26, 115, 232, 0.05)';
+                } else if (absoluteAngleDiff < 90) {
+                    // Needs significant turning - Orange
+                    largeArrowHead.style.borderColor = '#FF9800';
+                    largeDirectionArrow.style.backgroundColor = 'rgba(255, 152, 0, 0.1)';
+                } else {
+                    // Wrong direction - Red
+                    largeArrowHead.style.borderColor = '#F44336';
+                    largeDirectionArrow.style.backgroundColor = 'rgba(244, 67, 54, 0.1)';
+                }
+            } else {
+                // If device orientation is not available
+                rotationAngle = bearingToTarget;
+                largeArrowHead.style.transform = `rotate(${rotationAngle + 45}deg)`;
+                largeArrowHead.style.borderColor = '#1a73e8'; // Default blue
+            }
+            
+            // Add pulse animation when very close to waypoint
+            if (distanceToTarget < waypointProximityThreshold * 1.5) {
+                largeDirectionArrow.classList.add('pulse');
+            } else {
+                largeDirectionArrow.classList.remove('pulse');
+            }
+            
+            // Adjust opacity based on distance - more visible when closer
+            const opacityBase = 0.7;
+            const opacityBoost = Math.min(0.3, (50 - Math.min(distanceToTarget, 50)) / 50 * 0.3);
+            largeDirectionArrow.style.opacity = opacityBase + opacityBoost;
+        }
+        
+        // Handle position errors
+        function positionError(error) {
+            let errorMessage = '';
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = 'User denied the request for Geolocation';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = 'Location information is unavailable';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = 'The request to get user location timed out';
+                    break;
+                case error.UNKNOWN_ERROR:
+                    errorMessage = 'An unknown error occurred';
+                    break;
+            }
+            
+            statusIndicator.classList.remove('active');
+            statusText.textContent = 'Error: ' + errorMessage;
+            
+            // Update the instruction display with helpful message
+            instructionDisplay.innerHTML = `
+                <p class="instruction-error">GPS error: ${errorMessage}</p>
+                <p>Tips to fix:</p>
+                <ul>
+                    <li>Make sure location services are enabled in your device settings</li>
+                    <li>Try moving to an open area away from buildings</li>
+                    <li>Restart your browser or try another browser</li>
+                </ul>
+            `;
+        }
+        
+        // Draw the path on the canvas
+        function drawPath() {
+            if (!navigationCanvas || !ctx) return;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, navigationCanvas.width, navigationCanvas.height);
+            
+            if (routePathPoints.length < 2) return;
+            
+            // Calculate bounding box for the path
+            let minLat = routePathPoints[0].latitude;
+            let maxLat = routePathPoints[0].latitude;
+            let minLng = routePathPoints[0].longitude;
+            let maxLng = routePathPoints[0].longitude;
+            
+            // Add current position to bounding box if available
+            if (currentPosition) {
+                minLat = Math.min(minLat, currentPosition.latitude);
+                maxLat = Math.max(maxLat, currentPosition.latitude);
+                minLng = Math.min(minLng, currentPosition.longitude);
+                maxLng = Math.max(maxLng, currentPosition.longitude);
+            }
+            
+            routePathPoints.forEach(point => {
+                minLat = Math.min(minLat, point.latitude);
+                maxLat = Math.max(maxLat, point.latitude);
+                minLng = Math.min(minLng, point.longitude);
+                maxLng = Math.max(maxLng, point.longitude);
+            });
+            
+            // Add some padding to bounding box
+            const latPadding = (maxLat - minLat) * 0.2;
+            const lngPadding = (maxLng - minLng) * 0.2;
+            
+            minLat -= latPadding;
+            maxLat += latPadding;
+            minLng -= lngPadding;
+            maxLng += lngPadding;
+            
+            // Map lat/lng to canvas coordinates
+            function mapLngToX(lng) {
+                return ((lng - minLng) / (maxLng - minLng)) * navigationCanvas.width;
+            }
+            
+            function mapLatToY(lat) {
+                return navigationCanvas.height - ((lat - minLat) / (maxLat - minLat)) * navigationCanvas.height;
+            }
+            
+            // Draw the path
+            ctx.beginPath();
+            ctx.moveTo(
+                mapLngToX(routePathPoints[0].longitude), 
+                mapLatToY(routePathPoints[0].latitude)
+            );
+            
+            routePathPoints.forEach(point => {
+                ctx.lineTo(
+                    mapLngToX(point.longitude),
+                    mapLatToY(point.latitude)
+                );
+            });
+            
+            ctx.strokeStyle = '#1a73e8';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Draw waypoints
+            routePathPoints.forEach((point, index) => {
+                ctx.beginPath();
+                ctx.arc(
+                    mapLngToX(point.longitude),
+                    mapLatToY(point.latitude),
+                    index === targetWaypointIndex ? 8 : 5, // Bigger circle for target waypoint
+                    0, 
+                    Math.PI * 2
+                );
+                
+                // Different colors for different waypoint types
+                if (index === targetWaypointIndex) {
+                    ctx.fillStyle = '#FF9800'; // Orange for current target
+                } else if (index < targetWaypointIndex) {
+                    ctx.fillStyle = '#4CAF50'; // Green for passed waypoints
+                } else if (point.type === 'stairs') {
+                    ctx.fillStyle = '#9C27B0'; // Purple for stairs
+                } else if (point.type === 'elevator') {
+                    ctx.fillStyle = '#E91E63'; // Pink for elevators
+                } else if (index === routePathPoints.length - 1) {
+                    ctx.fillStyle = '#F44336'; // Red for final destination
+                } else {
+                    ctx.fillStyle = '#1a73e8'; // Blue for normal waypoints
+                }
+                
+                ctx.fill();
+                
+                // Draw a white border around the waypoint
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                
+                // Draw waypoint number for important points
+                if (point.type === 'stairs' || point.type === 'elevator' || 
+                   index === 0 || index === routePathPoints.length - 1) {
+                    ctx.fillStyle = 'white';
+                    ctx.font = '10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(
+                        (index + 1).toString(), 
+                        mapLngToX(point.longitude),
+                        mapLatToY(point.latitude)
+                    );
+                }
+            });
+            
+            // Draw current position if available
+            if (currentPosition) {
+                // Draw accuracy circle
+                if (currentPosition.accuracy) {
+                    // Calculate radius in pixels based on accuracy in meters
+                    const latDiff = (currentPosition.accuracy / 111000); // 111000 meters per degree latitude
+                    const lngDiff = (currentPosition.accuracy / (111000 * Math.cos(currentPosition.latitude * Math.PI / 180)));
+                    
+                    const accuracyRadiusX = Math.abs(mapLngToX(currentPosition.longitude + lngDiff) - mapLngToX(currentPosition.longitude));
+                    const accuracyRadiusY = Math.abs(mapLatToY(currentPosition.latitude + latDiff) - mapLatToY(currentPosition.latitude));
+                    
+                    // Average the X and Y radii
+                    const accuracyRadius = (accuracyRadiusX + accuracyRadiusY) / 2;
+                    
+                    ctx.beginPath();
+                    ctx.arc(
+                        mapLngToX(currentPosition.longitude),
+                        mapLatToY(currentPosition.latitude),
+                        accuracyRadius,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fillStyle = 'rgba(33, 150, 243, 0.2)';
+                    ctx.fill();
+                }
+                
+                // Draw position dot
+                ctx.beginPath();
+                ctx.arc(
+                    mapLngToX(currentPosition.longitude),
+                    mapLatToY(currentPosition.latitude),
+                    8,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fillStyle = '#2196F3';
+                ctx.fill();
+                
+                // Draw white border
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw a line from current position to target waypoint
+                if (navigationActive && targetWaypointIndex < routePathPoints.length) {
+                    ctx.beginPath();
+                    ctx.moveTo(
+                        mapLngToX(currentPosition.longitude),
+                        mapLatToY(currentPosition.latitude)
+                    );
+                    ctx.lineTo(
+                        mapLngToX(routePathPoints[targetWaypointIndex].longitude),
+                        mapLatToY(routePathPoints[targetWaypointIndex].latitude)
+                    );
+                    
+                    // Draw dashed line
+                    ctx.setLineDash([5, 3]);
+                    ctx.strokeStyle = '#FF9800'; // Orange
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
+                    // Reset line dash
+                    ctx.setLineDash([]);
+                    
+                    // Draw direction arrow on the line
+                    const midX = (mapLngToX(currentPosition.longitude) + mapLngToX(routePathPoints[targetWaypointIndex].longitude)) / 2;
+                    const midY = (mapLatToY(currentPosition.latitude) + mapLatToY(routePathPoints[targetWaypointIndex].latitude)) / 2;
+                    
+                    const angle = Math.atan2(
+                        mapLatToY(routePathPoints[targetWaypointIndex].latitude) - mapLatToY(currentPosition.latitude),
+                        mapLngToX(routePathPoints[targetWaypointIndex].longitude) - mapLngToX(currentPosition.longitude)
+                    );
+                    
+                    // Draw arrow tip at midpoint of the line
+                    drawArrowTip(midX, midY, angle, '#FF9800');
+                }
+            }
+        }
+        
+        // Draw an arrow tip at the specified position with the specified angle
+        function drawArrowTip(x, y, angle, color) {
+            const arrowSize = 10;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            
+            // Draw the arrow tip
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-arrowSize, arrowSize/2);
+            ctx.lineTo(-arrowSize, -arrowSize/2);
+            ctx.closePath();
+            
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            ctx.restore();
+        }
+        
+        // Helper functions for position smoothing
+        
+        // Add position to buffer for smoothing
+        function addPositionToBuffer(position) {
+            positionBuffer.push(position);
+            if (positionBuffer.length > maxBufferSize) {
+                positionBuffer.shift();
+            }
+        }
+        
+        // Add position to weighted history for better prediction
+        function addPositionToHistory(position) {
+            positionWeightedHistory.push({
+                position: position,
+                timestamp: Date.now(),
+                weight: 1 // Initial weight
+            });
+            
+            // Limit history size
+            if (positionWeightedHistory.length > maxHistorySize) {
+                positionWeightedHistory.shift();
+            }
+            
+            // Update weights based on recency and accuracy
+            updateHistoryWeights();
+        }
+        
+        // Update weights for historical positions
+        function updateHistoryWeights() {
+            const now = Date.now();
+            const maxAge = 30000; // 30 seconds
+            
+            positionWeightedHistory.forEach(entry => {
+                // Calculate age factor (newer positions get higher weight)
+                const age = now - entry.timestamp;
+                const ageFactor = Math.max(0, 1 - (age / maxAge));
+                
+                // Calculate accuracy factor (more accurate positions get higher weight)
+                const accuracyFactor = Math.max(0.1, Math.min(1, 10 / entry.position.accuracy));
+                
+                // Combine factors
+                entry.weight = ageFactor * accuracyFactor;
+            });
+        }
+        
+        // Get smoothed position based on buffer and weighted history
+        function getSmoothPosition(currentAccuracy) {
+            if (positionBuffer.length === 0) return null;
+            
+            // If we have only one position, return it
+            if (positionBuffer.length === 1) return positionBuffer[0];
+            
+            // Adaptive smoothing - use less smoothing if accuracy is good
+            // to ensure responsiveness when GPS is reliable
+            const isAccurate = currentAccuracy < 15;
+            const weightRecent = isAccurate ? 0.7 : 0.5;
+            
+            let totalWeight = 0;
+            let weightedLat = 0;
+            let weightedLng = 0;
+            let weightedAlt = 0;
+            let hasAltitude = false;
+            
+            // Apply exponential weighting - more recent positions get exponentially more weight
+            positionBuffer.forEach((pos, index) => {
+                // Calculate position weight - newer positions get higher weight
+                const ageWeight = weightRecent * Math.pow(1 - weightRecent, positionBuffer.length - 1 - index);
+                
+                // Accuracy-based weight factor
+                const accuracyWeight = Math.max(0.5, Math.min(1.5, 15 / pos.accuracy));
+                
+                // Combined weight
+                const weight = ageWeight * accuracyWeight;
+                
+                totalWeight += weight;
+                weightedLat += pos.latitude * weight;
+                weightedLng += pos.longitude * weight;
+                
+                if (pos.altitude !== null) {
+                    weightedAlt += pos.altitude * weight;
+                    hasAltitude = true;
+                }
+            });
+            
+            // Calculate accuracy as weighted average of all positions
+            const accuracy = positionBuffer.reduce(
+                (sum, pos, index) => sum + pos.accuracy * (index + 1), 0
+            ) / positionBuffer.reduce((sum, _, index) => sum + (index + 1), 0);
+            
+            return {
+                latitude: weightedLat / totalWeight,
+                longitude: weightedLng / totalWeight,
+                altitude: hasAltitude ? weightedAlt / totalWeight : null,
+                accuracy: accuracy,
+                timestamp: Date.now()
+            };
+        }
+        
+        // Calculate distance between two positions in meters
+        function calculateDistance(pos1, pos2) {
+            const R = 6371e3; // Earth radius in meters
+            const lat1Rad = pos1.latitude * Math.PI / 180;
+            const lat2Rad = pos2.latitude * Math.PI / 180;
+            const deltaLat = (pos2.latitude - pos1.latitude) * Math.PI / 180;
+            const deltaLng = (pos2.longitude - pos1.longitude) * Math.PI / 180;
+            
+            const a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
+                      Math.cos(lat1Rad) * Math.cos(lat2Rad) *
+                      Math.sin(deltaLng/2) * Math.sin(deltaLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            
+            return R * c;
+        }
+        
+        // Calculate bearing from pos1 to pos2 in degrees (0-360)
+        function calculateBearing(pos1, pos2) {
+            const lat1Rad = pos1.latitude * Math.PI / 180;
+            const lat2Rad = pos2.latitude * Math.PI / 180;
+            const deltaLng = (pos2.longitude - pos1.longitude) * Math.PI / 180;
+            
+            const y = Math.sin(deltaLng) * Math.cos(lat2Rad);
+            const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) -
+                     Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(deltaLng);
+            
+            let bearing = Math.atan2(y, x) * 180 / Math.PI;
+            if (bearing < 0) bearing += 360;
+            
+            return bearing;
+        }
+        
+        // Calculate total distance of a path in meters
+        function calculateTotalDistance(path) {
+            if (path.length < 2) return 0;
+            
+            let totalDistance = 0;
+            for (let i = 0; i < path.length - 1; i++) {
+                totalDistance += calculateDistance(path[i], path[i + 1]);
+            }
+            
+            return totalDistance;
+        }
+        
+        // Format distance in a human-readable way
+        function formatDistance(meters) {
+            if (meters < 1000) {
+                return `${Math.round(meters)}m`;
+            } else {
+                return `${(meters / 1000).toFixed(1)}km`;
+            }
+        }
+        
+        // Initialize
+        initialize();
+    });
+</script>
+{% endblock %}

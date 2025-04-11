@@ -1,0 +1,81 @@
+[
+  {
+    "id": 1,
+    "name": "HOD Cabin",
+    "building": "Academic Block",
+    "description": "Path to HOD cabin from main entrance",
+    "path_points": []
+  },
+  {
+    "id": 2,
+    "name": "Dean Office",
+    "building": "Academic Block",
+    "description": "Path to Dean office from main entrance",
+    "path_points": []
+  },
+  {
+    "id": 3,
+    "name": "Classroom 312",
+    "building": "Academic Block",
+    "description": "Path to Classroom 312 on the 3rd floor",
+    "path_points": [
+      {
+        "latitude": 26.9844907,
+        "longitude": 94.6232017,
+        "altitude": 46.5,
+        "accuracy": 4.041999816894531,
+        "timestamp": 1744391082518,
+        "type": "corner",
+        "sequence": 1
+      },
+      {
+        "latitude": 26.9844888,
+        "longitude": 94.6232007,
+        "altitude": 46.5,
+        "accuracy": 3,
+        "timestamp": 1744391098513,
+        "type": "corner",
+        "sequence": 2
+      },
+      {
+        "latitude": 26.9844826,
+        "longitude": 94.6232001,
+        "altitude": 45.20000076293945,
+        "accuracy": 3.9489998817443848,
+        "timestamp": 1744391112511,
+        "type": "corner",
+        "sequence": 3
+      },
+      {
+        "latitude": 26.9844669,
+        "longitude": 94.6231109,
+        "altitude": 46.5,
+        "accuracy": 7.670000076293945,
+        "timestamp": 1744391142513,
+        "type": "corner",
+        "sequence": 4
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Classroom 321",
+    "building": "Academic Block",
+    "description": "Path to Classroom 321 on the 3rd floor",
+    "path_points": []
+  },
+  {
+    "id": 5,
+    "name": "Library",
+    "building": "Campus Services",
+    "description": "Path to the main library",
+    "path_points": []
+  },
+  {
+    "id": 6,
+    "name": "Cafeteria",
+    "building": "Campus Services",
+    "description": "Path to the main cafeteria",
+    "path_points": []
+  }
+]

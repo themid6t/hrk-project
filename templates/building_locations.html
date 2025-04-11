@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ building_name }} Locations{% endblock %}
+
+{% block content %}
+<div class="locations-container">
+    <div class="building-header">
+        <h1>{{ building_name }} Locations</h1>
+        <a href="{{ url_for('home') }}" class="back-link">&larr; Back to Home</a>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="building-section">        
+        {% if routes %}
+            <div class="location-grid">
+                {% for route in routes %}
+                    <div class="location-card">
+                        <div class="location-info">
+                            <h3>{{ route.name }}</h3>
+                            <p>{{ route.description }}</p>
+                            
+                            <div class="path-info">
+                                {% if route.path_points|length > 0 %}
+                                    <span class="path-points">{{ route.path_points|length }} points</span>
+                                    {% if route.path_points|selectattr('type', 'equalto', 'stairs')|list|length > 0 %}
+                                        <span class="has-stairs">Includes stairs</span>
+                                    {% endif %}
+                                    <span class="status-recorded">Path recorded</span>
+                                {% else %}
+                                    <span class="status-unrecorded">No path recorded</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        {% if route.path_points|length > 0 %}
+                            <a href="{{ url_for('navigate', route_id=route.id) }}" class="btn btn-navigate">
+                                Navigate to {{ route.name }}
+                            </a>
+                        {% else %}
+                            <span class="btn btn-navigate disabled">
+                                Path not available
+                            </span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="no-routes-message">
+                <p>No locations available for {{ building_name }}.</p>
+                <a href="{{ url_for('home') }}" class="btn">Return to Home</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .locations-container {
+        max-width: 1000px;
+        margin: 30px auto;
+        padding: 25px;
+    }
+    
+    .building-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+    
+    .building-header h1 {
+        margin-bottom: 0;
+        color: #333;
+    }
+    
+    .back-link {
+        color: #1a73e8;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    
+    .alert {
+        padding: 10px 15px;
+        margin-bottom: 20px;
+        border-radius: 4px;
+    }
+    
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .alert-error {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .building-section {
+        margin-bottom: 40px;
+    }
+    
+    .location-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    
+    .location-card {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transition: transform 0.3s;
+    }
+    
+    .location-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .location-info {
+        padding: 20px;
+    }
+    
+    .location-info h3 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+    
+    .location-info p {
+        color: #666;
+        margin-bottom: 15px;
+    }
+    
+    .path-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .path-points {
+        background-color: #e3f2fd;
+        color: #0d47a1;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .has-stairs {
+        background-color: #fff3cd;
+        color: #856404;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .status-recorded {
+        background-color: #d4edda;
+        color: #155724;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .status-unrecorded {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    .btn-navigate {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        background-color: #1a73e8;
+        color: white;
+        text-align: center;
+        font-weight: 500;
+        transition: background-color 0.3s;
+    }
+    
+    .btn-navigate:hover {
+        background-color: #1557b0;
+        color: white;
+    }
+    
+    .btn-navigate.disabled {
+        background-color: #e9ecef;
+        color: #6c757d;
+        cursor: not-allowed;
+    }
+    
+    .no-routes-message {
+        text-align: center;
+        padding: 40px 20px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .no-routes-message p {
+        margin-bottom: 20px;
+        color: #666;
+    }
+</style>
+{% endblock %}

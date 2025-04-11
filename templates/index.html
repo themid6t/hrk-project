@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <h1>Welcome to University Navigation System</h1>
+        <p>Find your way around campus with ease</p>
+        <div class="search-container">
+            <input type="text" placeholder="Search for buildings, departments, or services...">
+            <button class="search-btn">Search</button>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <h2>Available Buildings</h2>
+    <div class="feature-grid">
+        {% if buildings %}
+            {% for building in buildings %}
+                <div class="feature-card">
+                    <h3>{{ building }}</h3>
+                    <p>Navigate to various locations within {{ building }}</p>
+                    <a href="{{ url_for('building_locations', building_name=building) }}" class="btn">Explore</a>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>No buildings available at the moment. Please check back later or visit the admin page to add routes.</p>
+            </div>
+        {% endif %}
+        
+        <!-- Add placeholder cards for other campus areas -->
+        <div class="feature-card">
+            <h3>Campus Services</h3>
+            <p>Find cafeterias, libraries, healthcare, and student services</p>
+            <a href="#" class="btn btn-disabled">Coming Soon</a>
+        </div>
+        
+        <div class="feature-card">
+            <h3>Residence Halls</h3>
+            <p>Locate dormitories and on-campus housing facilities</p>
+            <a href="#" class="btn btn-disabled">Coming Soon</a>
+        </div>
+    </div>
+</section>
+
+<section class="info-section">
+    <h2>How Navigation Works</h2>
+    <div class="info-content">
+        <div class="info-item">
+            <div class="info-number">1</div>
+            <div class="info-text">
+                <h3>Select Your Destination</h3>
+                <p>Choose a building and select the specific location you want to navigate to</p>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-number">2</div>
+            <div class="info-text">
+                <h3>View Path Details</h3>
+                <p>See the path details including distance, floors, and any stairs involved</p>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-number">3</div>
+            <div class="info-text">
+                <h3>Follow Directions</h3>
+                <p>Get real-time guidance to help you navigate to your destination</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .empty-state {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 40px 20px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .btn-disabled {
+        background-color: #e9ecef;
+        color: #6c757d;
+        cursor: not-allowed;
+    }
+    
+    .btn-disabled:hover {
+        background-color: #e9ecef;
+    }
+    
+    .info-section {
+        padding: 60px 20px;
+        background-color: #f8f9fa;
+    }
+    
+    .info-section h2 {
+        text-align: center;
+        margin-bottom: 40px;
+        color: #333;
+    }
+    
+    .info-content {
+        max-width: 1000px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+    }
+    
+    .info-item {
+        display: flex;
+        align-items: flex-start;
+    }
+    
+    .info-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #1a73e8;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-right: 15px;
+        flex-shrink: 0;
+    }
+    
+    .info-text h3 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+    
+    .info-text p {
+        color: #666;
+    }
+    
+    @media (max-width: 768px) {
+        .info-content {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}

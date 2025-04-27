@@ -4,18 +4,26 @@
 
 {% block content %}
 <section class="hero">
-    <div class="hero-content">
-        <h1>Welcome to University Navigation System</h1>
-        <p>Find your way around campus with ease</p>
-        <div class="search-container">
-            <input type="text" placeholder="Search for buildings, departments, or services...">
-            <button class="search-btn">Search</button>
+    <div class="hero-left">
+        <div class="hero-content">
+            <h1>NavIn-AN INDOOR NAVIGATION</h1>
+            <p>Find your way around campus with ease</p>
+            <div class="search-container">
+                <input type="text" placeholder="Search for buildings, departments, or services...">
+                <button class="search-btn">Search</button>
+            </div>
+        </div>
+    </div>
+    <div class="hero-right">
+        <div class="video-box video1">
+            <img src="https://i.pinimg.com/originals/dc/22/04/dc2204b97a8f494d234ee39ba6dcf430.gif" alt="Video" />
         </div>
     </div>
 </section>
 
+
 <section class="features">
-    <h2>Available Buildings</h2>
+    <h2 class="section-title">Available Buildings</h2>
     <div class="feature-grid">
         {% if buildings %}
             {% for building in buildings %}
@@ -26,25 +34,32 @@
                 </div>
             {% endfor %}
         {% else %}
-            <div class="empty-state">
+            <div class="feature-card empty-state">
                 <p>No buildings available at the moment. Please check back later or visit the admin page to add routes.</p>
             </div>
         {% endif %}
-        
-        <!-- Add placeholder cards for other campus areas -->
+
         <div class="feature-card">
-            <h3>Campus Services</h3>
-            <p>Find cafeterias, libraries, healthcare, and student services</p>
+            <div class="stars"></div> <!-- Add this -->
+            <div class="feature-card-content">
+                <h3>Campus Services</h3>
+                <p>Find cafeterias, libraries, healthcare, and student services</p>
+            </div>
             <a href="#" class="btn btn-disabled">Coming Soon</a>
         </div>
         
+
         <div class="feature-card">
             <h3>Residence Halls</h3>
             <p>Locate dormitories and on-campus housing facilities</p>
             <a href="#" class="btn btn-disabled">Coming Soon</a>
         </div>
+
+    
+        
     </div>
 </section>
+
 
 <section class="info-section">
     <h2>How Navigation Works</h2>

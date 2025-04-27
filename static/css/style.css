@@ -5,12 +5,24 @@
     box-sizing: border-box;
 }
 
+
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Poppins', sans-serif;
     line-height: 1.6;
     color: #333;
     background-color: #f5f5f5;
+    overflow: scroll; 
 }
+
+body::-webkit-scrollbar {
+    display: none; /* Hide the scrollbar for Chrome, Safari, Opera */
+}
+
+html {
+    scroll-behavior: smooth; /* Optional: Add smooth scrolling */
+}
+
+
 
 a {
     text-decoration: none;
@@ -18,170 +30,343 @@ a {
 }
 
 /* Layout */
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
 
-/* Navigation */
-header {
-    background-color: #fff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
 
+
+
+/* navbar here comes */
 .navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    background: transparent; /* Make navbar transparent */
     padding: 15px 20px;
-    max-width: 1200px;
-    margin: 0 auto;
+    width: 100%;
+    height: 70px; /* Height of the navbar */
+    display: flex;
+    justify-content: center; /* Centering content */
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* Subtle shadow for a transparent effect */
+    z-index: 99;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Optional: subtle bottom border */
+    position: static;
 }
 
 .logo a {
-    font-size: 1.5rem;
+    font-size: 14px; /* Slightly larger font for logo */
     font-weight: bold;
-    color: #1a73e8;
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    color: #e5e5e5;
+    text-decoration: none;
 }
 
 .nav-links {
-    display: flex;
     list-style: none;
+    display: flex;
+    gap: 20px; /* Reduced gap for closer buttons */
+    align-items: center;
+    justify-content: center; /* Center buttons horizontally */
 }
 
 .nav-links li {
-    margin-left: 20px;
+    display: inline-block;
 }
 
-.nav-links a {
-    color: #333;
-    font-weight: 500;
-    transition: color 0.3s;
+.nav-links li a {
+    padding: 5px 12px; /* Smaller padding */
+    background-color: #f1f1f1;
+    color: #111;
+    text-decoration: none;
+    border-radius: 50px;
+    font-size: 18px; /* Smaller font size */
+    transition: all 0.3s ease;
 }
 
-.nav-links a:hover {
-    color: #1a73e8;
+.nav-links li a:hover {
+    background-color: #1ea789;
+    color: #fff;
 }
 
-/* Hero Section */
+
+
+
+
+
+
+
 .hero {
-    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/static/images/campus.jpg');
-    background-size: cover;
-    background-position: center;
-    color: white;
-    text-align: center;
-    padding: 100px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100vh;
+    padding: 50px;
+    background: 
+        linear-gradient(to bottom, rgba(0,0,0,0) 60%, rgba(0,0,0,0.7) 100%), 
+        url('https://i.pinimg.com/736x/f3/a8/4d/f3a84d798144e08b532369e8b9eaf3b1.jpg') no-repeat center center/cover;
+    background-blend-mode: overlay;
 }
 
-.hero-content {
-    max-width: 800px;
-    margin: 0 auto;
+
+.hero-left {
+    flex: 1;
+    
+    padding: 40px;
+    border-radius: 20px;
+    color: #030303;
 }
 
-.hero h1 {
-    font-size: 2.5rem;
-    margin-bottom: 15px;
+.hero-content h1 {
+    font-size: 3.5rem; /* Slightly larger for more hero presence */
+    margin-bottom: 20px;
+    font-family: 'Times New Roman', Times, serif;
+    font-weight: 700; /* Strong boldness */
+    color: #333; /* Deep dark grey instead of pure black for softer look */
+    text-transform: capitalize; /* Each word starts with a capital letter */
+    letter-spacing: 1px; /* Slightly spaced for elegance */
+    line-height: 1.2; /* Better readability */
 }
 
-.hero p {
-    font-size: 1.2rem;
+
+.hero-content p {
+    font-size: 1.5rem;
     margin-bottom: 30px;
 }
 
-/* Search Box */
 .search-container {
     display: flex;
-    max-width: 600px;
-    margin: 0 auto;
+    gap: 10px;
 }
 
 .search-container input {
     flex-grow: 1;
     padding: 15px;
+    border-radius: 8px;
     border: none;
-    border-radius: 4px 0 0 4px;
     font-size: 1rem;
 }
 
 .search-btn {
     padding: 15px 25px;
-    background-color: #1a73e8;
-    color: white;
+    background-color: #000000;
     border: none;
-    border-radius: 0 4px 4px 0;
-    cursor: pointer;
+    color: #fff;
     font-size: 1rem;
-    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
 }
 
-.search-btn:hover {
-    background-color: #1557b0;
+
+
+
+/* Container for the video boxes */
+.hero-right {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center; /* Centering the items horizontally */
+    align-items: center; /* Centering the items vertically */
+    overflow: hidden; /* Ensures no scrolling */
 }
+
+/* Styling for individual video-boxes (with tilt and random positioning) */
+.video-box {
+    position: absolute;
+    width: 250px; /* Adjust width of the boxes */
+    height: 150px; /* Adjust height of the boxes */
+    overflow: hidden;
+    border-radius: 15px; /* Add border-radius for rounded corners */
+    transition: transform 0.5s ease-in-out, top 1s ease, left 1s ease; /* Smooth transition for rotation and position */
+}
+
+
+.video-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ensures the GIF fits inside the box */
+    object-position: center; /* Keeps the GIF centered */
+}
+
+/* Random positioning and rotation of boxes */
+.video-box.video1 {
+    top: 10%;
+    left: 10%;
+    transform: rotate(-15deg); /* Tilted to the left */
+}
+
+
+
+/* Optional: Adding hover effect to rotate on mouse hover */
+.video-box:hover {
+    transform: rotate(0deg); /* Reset rotation on hover */
+    top: calc(50% + 20px); /* Slightly move boxes up on hover */
+    left: calc(50% + 20px); /* Slightly move boxes right on hover */
+}
+
+/* Adding animations to avoid overlap (this is for random animation movement) */
+@keyframes randomMovement {
+    0% {
+        transform: rotate(0deg);
+        top: 10%;
+        left: 10%;
+    }
+    25% {
+        transform: rotate(15deg);
+        top: 30%;
+        left: 60%;
+    }
+    50% {
+        transform: rotate(-10deg);
+        top: 60%;
+        left: 25%;
+    }
+    75% {
+        transform: rotate(5deg);
+        top: 80%;
+        left: 40%;
+    }
+    100% {
+        transform: rotate(0deg);
+        top: 50%;
+        left: 50%;
+    }
+}
+
+/* Apply animation to the video boxes */
+.video-box {
+    animation: randomMovement 10s infinite ease-in-out;
+}
+
+/* Optional responsiveness for mobile screens */
+@media (max-width: 768px) {
+    .hero-right {
+        flex-direction: column; 
+    }
+
+    .video-box {
+        width: 80%; /* Increase width on small screens */
+        height: 200px; /* Adjust height */
+        margin-bottom: 20px; /* Add spacing between stacked boxes */
+    }
+}
+
+
 
 /* Features Section */
 .features {
     padding: 60px 20px;
-    text-align: center;
+    background-color: #DAD2FF;
 }
 
-.features h2 {
-    font-size: 2rem;
-    margin-bottom: 40px;
+.section-title {
+    font-size: 2.5rem;
+    font-weight: 700;
     color: #333;
+    margin-bottom: 40px;
+    text-align: left; /* Align text to the left */
+    position: relative; /* Make room for the line */
 }
+
+.section-title::after {
+    content: ''; /* Empty content for the line */
+    position: absolute; /* Position it after the title */
+    left: 0;
+    bottom: -10px; /* Place it right under the text */
+    width: 100%; /* Extend the line across the full width */
+    height: 4px; /* Thickness of the line */
+    background-color: #000000; /* Line color (adjust as needed) */
+    border-radius: 4px; /* Rounded edges for smoothness */
+    transition: width 0.3s ease-in-out; /* Smooth transition when hovered */
+}
+
+/* Optional: Grow line when hovered */
+.section-title:hover::after {
+    width: 110%; /* Line will grow slightly when hovered */
+}
+
 
 .feature-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
     max-width: 1200px;
     margin: 0 auto;
 }
 
 .feature-card {
-    background-color: white;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s;
-}
-
-.feature-card:hover {
-    transform: translateY(-5px);
+    background: #fff;
+    padding: 30px 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .feature-card h3 {
-    margin-bottom: 15px;
-    color: #1a73e8;
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    color: #222;
+    text-align: left; /* 🌟 align text to left */
+    display: flex; /* 🌟 make h3 flexible */
+    align-items: center; /* vertically center text and arrow */
+    gap: 8px; /* space between text and arrow */
 }
 
+.feature-card h3::after {
+    content: '→'; /* 🌟 simple arrow */
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+/* Optional: Animate arrow on hover */
+.feature-card:hover h3::after {
+    transform: translateX(5px);
+}
+
+
 .feature-card p {
-    margin-bottom: 25px;
-    color: #666;
+    font-size: 1rem;
+    color: #555;
+    margin-bottom: 20px;
+    flex-grow: 1;
 }
 
 .btn {
     display: inline-block;
     padding: 10px 20px;
-    background-color: #1a73e8;
+    background-color: #8B5DFF;
     color: white;
-    border-radius: 4px;
-    font-weight: 500;
-    transition: background-color 0.3s;
+    border-radius: 8px;
+    text-decoration: none;
+    text-align: center;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
 }
 
 .btn:hover {
-    background-color: #1557b0;
+    background-color: #E2BBE9;
+    color: #000000;
 }
 
-/* Footer */
-footer {
-    background-color: #333;
-    color: white;
-    text-align: center;
-    padding: 20px;
+.btn-disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
 }
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+.empty-state {
+    text-align: center;
+    color: #777;
+}
+
+
+
+
 
 /* Responsive Design */
 @media (max-width: 768px) {

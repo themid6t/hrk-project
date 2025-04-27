@@ -11,8 +11,31 @@
             <p><strong>Description:</strong> {{ route.description }}</p>
         </div>
     </div>
-    
+
     <div class="navigation-content">
+
+        
+        <div class="canvas-wrapper">
+            <div class="canvas-container">
+                <canvas id="navigation-canvas"></canvas>
+
+                <div class="direction-indicator" id="direction-arrow">
+                    <div class="arrow"></div>
+                    <div class="distance-text">-- m</div>
+                </div>
+
+                <div id="compass-calibration-msg" class="compass-calibration-msg">
+                    Calibrate compass: Move your device in a figure-8 pattern
+                </div>
+
+                <div id="large-direction-arrow" class="large-direction-arrow">
+                    <div class="large-arrow-head"></div>
+                </div>
+            </div>
+        </div>
+        <!-- End Canvas -->
+
+        <!-- ✅ THEN Current Location -->
         <div class="navigation-map">
             <div id="location-display">
                 <h3>Your Current Location</h3>
@@ -27,21 +50,9 @@
                     <span id="status-text">Waiting for GPS signal...</span>
                 </div>
             </div>
-            <div class="canvas-container">
-                <canvas id="navigation-canvas"></canvas>
-                <div class="direction-indicator" id="direction-arrow">
-                    <div class="arrow"></div>
-                    <div class="distance-text">-- m</div>
-                </div>
-                <div id="compass-calibration-msg" class="compass-calibration-msg">
-                    Calibrate compass: Move your device in a figure-8 pattern
-                </div>
-                <div id="large-direction-arrow" class="large-direction-arrow">
-                    <div class="large-arrow-head"></div>
-                </div>
-            </div>
         </div>
-        
+        <!-- End Current Location -->
+
         <div class="navigation-instructions">
             <h3>Navigation Instructions</h3>
             <div id="instruction-display">
@@ -61,8 +72,9 @@
                 </div>
             </div>
         </div>
+
     </div>
-    
+
     <div class="navigation-path-info">
         <h3>Path Information</h3>
         <div class="path-stats">
@@ -95,7 +107,10 @@
             </ul>
         </div>
     </div>
+
 </div>
+
+
 {% endblock %}
 
 {% block extra_css %}
@@ -103,7 +118,7 @@
     .navigation-container {
         max-width: 1200px;
         margin: 30px auto;
-        padding: 0 20px;
+        padding: 85px 20px 0 20px;
     }
     
     .navigation-header {
@@ -139,12 +154,13 @@
     }
     
     .navigation-map {
-        background-color: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        padding: 20px;
-        min-height: 400px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+    min-height: 150px;
     }
+
     
     #location-display {
         margin-bottom: 20px;
@@ -182,7 +198,7 @@
     
     .canvas-container {
         width: 100%;
-        height: 300px;
+        height: 400px;
         border: 1px solid #ddd;
         border-radius: 4px;
         position: relative;
